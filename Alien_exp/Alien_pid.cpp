@@ -813,7 +813,10 @@ void Custom::updatePoseFromMocap() {
                 }
                 
                 // Process all obstacles
-                for (auto& [name, data] : robots.items()) {
+                // for (auto& [name, data] : robots.items()) {
+                for (auto it = robots.begin(); it != robots.end(); ++it) {
+                    std::string name = it.key();
+                    auto& data = it.value();
                     // Skip our robot
                     if (name == "Go1" or name == "Go2") continue;
                     
