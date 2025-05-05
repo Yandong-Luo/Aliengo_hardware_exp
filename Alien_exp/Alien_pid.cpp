@@ -10,7 +10,7 @@ Use of this source code is governed by the MPL-2.0 license, see LICENSE.
 #include <string.h>
 
 #include <Eigen/Dense>
-#include <zmq.hpp>
+#include <zmq.h>
 #include <nlohmann/json.hpp>
 #define DEBUG_MODE true
 using json = nlohmann::json;
@@ -544,19 +544,40 @@ public:
         udp.InitCmdData(cmd);
 
         try {
-			zmq_context = new zmq::context_t();
-			zmq_socket = new zmq::socket_t(*zmq_context, zmq::socket_type::sub);
+			// zmq_context = new zmq::context_t();
+			// zmq_socket = new zmq::socket_t(*zmq_context, zmq::socket_type::sub);
 			
-			zmq_socket->connect("tcp://128.61.44.239:5555");
-			zmq_socket->set(zmq::sockopt::subscribe, "");
-			std::cout << "Connected to MoCap server" << std::endl;
+			// zmq_socket->connect("tcp://128.61.44.239:5555");
+			// zmq_socket->set(zmq::sockopt::subscribe, "");
+			// std::cout << "Connected to MoCap server" << std::endl;
 
-			zmq_planner_context = new zmq::context_t();
-			zmq_planner_socket = new zmq::socket_t(*zmq_planner_context, zmq::socket_type::sub);
+			// zmq_planner_context = new zmq::context_t();
+			// zmq_planner_socket = new zmq::socket_t(*zmq_planner_context, zmq::socket_type::sub);
 			
-			zmq_planner_socket->connect("tcp://128.61.21.180:5556");
-			zmq_planner_socket->set(zmq::sockopt::subscribe, "");
-			std::cout << "Connected to planner server" << std::endl;
+			// zmq_planner_socket->connect("tcp://128.61.21.180:5556");
+			// zmq_planner_socket->set(zmq::sockopt::subscribe, "");
+			// std::cout << "Connected to planner server" << std::endl;
+
+            my_zmq_ctx = zmq_ctx_new();
+            // Create zmq socket
+            my_zmq_sock = zmq_socket(my_zmq_ctx, ZMQ_SUB);
+            
+            // Connect to MoCap server
+            zmq_connect(my_zmq_sock, "tcp://128.61.44.239:5555");
+            // Set subscription filter to receive everything
+            zmq_setsockopt(my_zmq_sock, ZMQ_SUBSCRIBE, "", 0);
+            std::cout << "Connected to MoCap server" << std::endl;
+
+            // Create planner context
+            my_zmq_planner_ctx = zmq_ctx_new();
+            // Create planner socket
+            my_zmq_planner_sock = zmq_socket(my_zmq_planner_ctx, ZMQ_SUB);
+            
+            // Connect to planner server
+            zmq_connect(my_zmq_planner_sock, "tcp://128.61.21.180:5556");
+            // Set subscription filter to receive everything
+            zmq_setsockopt(my_zmq_planner_sock, ZMQ_SUBSCRIBE, "", 0);
+            std::cout << "Connected to planner server" << std::endl;
 		} catch (const std::exception& e) {
 			std::cerr << "Failed to connect to MoCap server: " << e.what() << std::endl;
 		}
@@ -585,10 +606,17 @@ public:
     }
 
     ~Custom(){
-		delete zmq_socket;
-		delete zmq_context;
-		delete zmq_planner_socket;
-		delete zmq_planner_context;
+		// delete zmq_socket;
+		// delete zmq_context;
+		// delete zmq_planner_socket;
+		// delete zmq_planner_context;
+
+        zmq_close(my_zmq_sock);
+        zmq_ctx_destroy(my_zmq_ctx);
+
+        zmq_close(my_zmq_planner_sock);
+        zmq_ctx_destroy(my_zmq_planner_ctx);
+
 	}
 
     void UDPRecv();
@@ -612,11 +640,11 @@ public:
 
     // ****************************
     ThreeDimensionPIDController controller;
-	zmq::context_t* zmq_context;
-	zmq::socket_t* zmq_socket;
+	void* my_zmq_ctx;
+    void* my_zmq_sock;
+    void* my_zmq_planner_ctx;
+    void* my_zmq_planner_sock;
 
-	zmq::context_t* zmq_planner_context;
-	zmq::socket_t* zmq_planner_socket;
     double last_timestamp = 0.0; 
 
     Pose robot_pose;
@@ -733,11 +761,18 @@ void Custom::wayppointInterpolation(){
 
 void Custom::updatePoseFromMocap() {
     try {
-        zmq::message_t message;
-        auto result = zmq_socket->recv(message, zmq::recv_flags::dontwait);
+        // zmq::message_t message;
+        char buffer[4096] = {0};
+        // auto result = zmq_socket->recv(message, zmq::recv_flags::dontwait);
+        // int recv_len = zmq_recv(zmq_socket, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
         
-        if (result) {
-            std::string msg_str = message.to_string();
+        // char buffer[4096] = {0};
+        int recv_len = zmq_recv(my_zmq_sock, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
+        
+        if (recv_len > 0) {
+            // std::string msg_str = message.to_string();
+            buffer[recv_len] = '\0';
+            std::string msg_str(buffer);
             
             if(DEBUG_MODE) {
                 std::cout << "Received MoCap message" << std::endl;
@@ -833,11 +868,20 @@ void Custom::updatePoseFromMocap() {
 
 void Custom::updateTargetPointFromPlanner() {
     try {
-        zmq::message_t message;
-        auto result = zmq_planner_socket->recv(message, zmq::recv_flags::dontwait);
+        // zmq::message_t message;
+        // auto result = zmq_planner_socket->recv(message, zmq::recv_flags::dontwait);
+
+        char buffer[4096] = {0};
+        // int recv_len = zmq_recv(zmq_planner_socket, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
+        int recv_len = zmq_recv(my_zmq_planner_sock, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
         
-        if (result) {
-            std::string msg_str = message.to_string();
+        
+        
+        if (recv_len > 0) {
+            // std::string msg_str = message.to_string();
+
+            buffer[recv_len] = '\0';
+            std::string msg_str(buffer);
             
             if(DEBUG_MODE) {
                 std::cout << "Received Planner message: " << msg_str << std::endl;
