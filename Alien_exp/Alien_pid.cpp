@@ -751,36 +751,36 @@ void Custom::setWaypoints(){
     // waypoint_pos.push_back(Eigen::Vector3d(1.2, 0.5, 0));
     // waypoint_pos.push_back(Eigen::Vector3d(3.0, 0.6, 0));
 
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 0.357, 0.0)); // t=0.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.750, 0.357, 0.0)); // t=2.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.357, 0.0)); // t=4.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.714, 0.0)); // t=6.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=8.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=10.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=12.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=14.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.714, 0.0)); // t=16.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.357, 0.0)); // t=18.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.750, 0.357, 0.0)); // t=20.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 0.357, 0.0)); // t=22.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 0.714, 0.0)); // t=24.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.071, 0.0)); // t=26.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.429, 0.0)); // t=28.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=30.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=32.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=34.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=36.000
-    waypoint_pos.push_back(Eigen::Vector3d(0.750, 1.786, 0.0)); // t=38.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.125, 1.786, 0.0)); // t=40.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.500, 1.786, 0.0)); // t=42.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.500, 1.607, 0.0)); // t=44.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.500, 1.429, 0.0)); // t=46.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.875, 1.429, 0.0)); // t=48.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.875, 1.429, 0.0)); // t=50.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=52.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=54.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=56.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=58.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 0.357, 0.0)); // t=0.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.750, 0.357, 0.0)); // t=2.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.357, 0.0)); // t=4.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.714, 0.0)); // t=6.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=8.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=10.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=12.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=14.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.714, 0.0)); // t=16.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.357, 0.0)); // t=18.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.750, 0.357, 0.0)); // t=20.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 0.357, 0.0)); // t=22.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 0.714, 0.0)); // t=24.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.071, 0.0)); // t=26.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.429, 0.0)); // t=28.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=30.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=32.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=34.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=36.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.750, 1.786, 0.0)); // t=38.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.125, 1.786, 0.0)); // t=40.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.500, 1.786, 0.0)); // t=42.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.500, 1.607, 0.0)); // t=44.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.500, 1.429, 0.0)); // t=46.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.875, 1.429, 0.0)); // t=48.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.875, 1.429, 0.0)); // t=50.000
+    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=52.000
+    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=54.000
+    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=56.000
+    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=58.000
 
     for(auto waypoint:waypoint_pos){
         path.addPoint(waypoint.x(), waypoint.y(), waypoint.z());
