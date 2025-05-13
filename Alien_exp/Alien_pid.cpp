@@ -21,12 +21,14 @@ T clamp(T val, T low, T high) {
     return std::max(low, std::min(val, high));
 }
 
-#define TURNING_STATE 1
+// #define TURNING_STATE 1
 #define WAIT_STATE 2
 #define TRAJECTORY_FOLLOW_STATE 3
 
 
 static double start_stop_timestamp = 0.0;
+
+static int current_state = TRAJECTORY_FOLLOW_STATE;
 
 // ##########################################################################################
 // ####################################### PID Controller ###################################
@@ -203,8 +205,9 @@ public:
     }
     
     // Set new path
-    void setPath(const Waypoints& new_path) {
+    void setPath(const Waypoints& new_path, const std::vector<int>& waypoint_state) {
         path_ = new_path;
+        waypoint_state_ = waypoint_state;
         current_waypoint_idx_ = 0;
         
         // Reset PID controllers
@@ -365,11 +368,12 @@ public:
 		}
 
         if (current_state == WAIT_STATE) {
-            if ((current_timestamp - start_stop_timestamp) > 5){
+            std::cout<< "Waiting for 50ms..." << std::endl;
+            std::cout<< "current_timestamp: " << current_timestamp << "start stop:"<< start_stop_timestamp << std::endl;
+            if (abs(current_timestamp - start_stop_timestamp) > 5){
                 start_stop_timestamp = 0.0;
                 current_state = TRAJECTORY_FOLLOW_STATE;
             }
-            // If in turning state, just stop the robot
             cmd_linear_x_ = 0.0;
 			cmd_linear_x_ = 0.0;
 			cmd_linear_y_ = 0.0;
@@ -380,48 +384,52 @@ public:
 		// Get current waypoint in world frame
 		const auto& target = path_[current_waypoint_idx_];
 
-        bool is_stop_point = false;
-        // if (current_waypoint_idx_ + 1 < len(path_) && target == path_[current_waypoint_idx_ + 1]) {
-        //     is_stop_point = true;
+        const auto& target_state = waypoint_state_[current_waypoint_idx_];
+
+        // Waypoints::Point2D target = target_const;
+
+        // bool is_stop_point = false;
+        // // if (current_waypoint_idx_ + 1 < len(path_) && target == path_[current_waypoint_idx_ + 1]) {
+        // //     is_stop_point = true;
+        // // }
+
+        // if (current_waypoint_idx_ + 1 < path_.size()) {
+        //     const auto& next_target = path_[current_waypoint_idx_ + 1];
+        //     // target[2
+        //     double dx = next_target.x - target.x;
+        //     double dy = next_target.y - target.y;
+        //     target.yaw = std::atan2(dy, dx);
+        //     is_stop_point = (std::abs(target.x - next_target.x) < 0.001 && 
+        //                     std::abs(target.y - next_target.y) < 0.001);
         // }
 
-        if (current_waypoint_idx_ + 1 < path_.size()) {
-            const auto& next_target = path_[current_waypoint_idx_ + 1];
-            // target[2
-            double dx = next_target.x - target.x;
-            double dy = next_target.y - target.y;
-            target.yaw std::atan2(dy, dx);
-            is_stop_point = (std::abs(target.x - next_target.x) < 0.001 && 
-                            std::abs(target.y - next_target.y) < 0.001);
-        }
+        // if (is_stop_point) {
+        //     // cmd_linear_x_ = 0.0;
+        //     // cmd_linear_y_ = 0.0;
+        //     // cmd_angular_ = 0.0;
 
-        if (is_stop_point) {
-            // cmd_linear_x_ = 0.0;
-            // cmd_linear_y_ = 0.0;
-            // cmd_angular_ = 0.0;
+        //     current_state = WAIT_STATE;
 
-            current_state = WAIT_STATE;
-
-            start_stop_timestamp = current_timestamp;
+        //     start_stop_timestamp = current_timestamp;
             
-            // Skip all identical waypoints
-            while (current_waypoint_idx_ + 1 < path_.size()) {
-                const auto& current = path_[current_waypoint_idx_];
-                const auto& next = path_[current_waypoint_idx_ + 1];
+        //     // Skip all identical waypoints
+        //     while (current_waypoint_idx_ + 1 < path_.size()) {
+        //         const auto& current = path_[current_waypoint_idx_];
+        //         const auto& next = path_[current_waypoint_idx_ + 1];
                 
-                if (std::abs(current.x - next.x) < 0.001 && 
-                    std::abs(current.y - next.y) < 0.001) {
-                    current_waypoint_idx_++;
-                } else {
-                    break;
-                }
-            }
+        //         if (std::abs(current.x - next.x) < 0.001 && 
+        //             std::abs(current.y - next.y) < 0.001) {
+        //             current_waypoint_idx_++;
+        //         } else {
+        //             break;
+        //         }
+        //     }
             
-            // if (DEBUG_MODE) {
-            //     std::cout << "Stop point detected. Stopping robot and skipping identical waypoints." << std::endl;
-            // }
-            return;
-        }
+        //     // if (DEBUG_MODE) {
+        //     //     std::cout << "Stop point detected. Stopping robot and skipping identical waypoints." << std::endl;
+        //     // }
+        //     return;
+        // }
 
 		
 		// Create 3D point for target (z=0 for 2D navigation)
@@ -447,7 +455,7 @@ public:
 		
 		// Check if we've reached the current waypoint (both position AND orientation)
 		if (distance <= pos_tol_ && std::abs(yaw_error) <= ang_tol_) {
-			// Move to the next waypoint
+            // Move to the next waypoint
 			current_waypoint_idx_++;
 			
 			// Reset PID controllers when switching waypoints
@@ -464,6 +472,15 @@ public:
 				std::cout << "Goal reached!" << std::endl;
 				return;
 			}
+
+            if(target_state == WAIT_STATE) {
+                // If the waypoint is a stop point, stop the robot
+                cmd_linear_x_ = 0.0;
+                cmd_linear_y_ = 0.0;
+                cmd_angular_ = 0.0;
+                current_state = WAIT_STATE;
+                start_stop_timestamp = current_timestamp;
+            }
 			
 			// Get new target waypoint
 			const auto& new_target = path_[current_waypoint_idx_];
@@ -519,7 +536,7 @@ public:
 			std::cout << "Target world: (" << target.x << ", " << target.y << "), yaw: " << target.yaw << std::endl;
 			std::cout << "Target robot: (" << dx_robot << ", " << dy_robot << ")" << std::endl;
 			std::cout << "Current: (" << current_pose.position.x() << ", " 
-					<< current_pose.position.y() << "), yaw: " << current_yaw() << std::endl;
+					<< current_pose.position.y() << "), yaw: " << current_yaw() << "timestamp: " << current_timestamp << std::endl;
 			std::cout << "Distance: " << distance << ", Yaw error: " << yaw_error << " rad" << std::endl;
 			std::cout << "Position tolerance: " << pos_tol_ << ", Angle tolerance: " << ang_tol_ << std::endl;
 			std::cout << "Cmd: x=" << cmd_linear_x_ << ", y=" << cmd_linear_y_ << ", angular=" << cmd_angular_ << std::endl;
@@ -579,6 +596,9 @@ private:
     
     // Path
     Waypoints path_;
+
+    // waypoint state
+    std::vector<int> waypoint_state_;
     
     // Control limits
     double max_linear_vel_;
@@ -693,6 +713,9 @@ public:
     void updateTargetPointFromPlanner();
     void RobotFollower();
     void setWaypoints();
+    void processWaypoint(const std::vector<Eigen::Vector3d>& waypoint_input,
+                         std::vector<Eigen::Vector3d>& waypoint_pos,
+                         std::vector<int>& waypoint_state);
 
     Safety safe;
     UDP udp;
@@ -708,7 +731,7 @@ public:
     void* my_zmq_planner_ctx;
     void* my_zmq_planner_sock;
 
-    int current_state = TRAJECTORY_FOLLOW_STATE;
+    // int current_state = TRAJECTORY_FOLLOW_STATE;
 
     double start_stop_timestamp = 0.0;
 
@@ -732,8 +755,49 @@ void Custom::setTargetPoint(double x, double y, double yaw) {
     }
 }
 
+void Custom::processWaypoint(const std::vector<Eigen::Vector3d>& waypoint_input,
+                             std::vector<Eigen::Vector3d>& waypoint_pos,
+                             std::vector<int>& waypoint_state) {
+    waypoint_pos.clear();
+    waypoint_state.clear();
+
+    if (waypoint_input.empty()) return;
+
+    for (size_t i = 0; i < waypoint_input.size(); ++i) {
+        const auto& current = waypoint_input[i];
+
+        // Skip if same as last appended (i.e., duplicate)
+        if (!waypoint_pos.empty()) {
+            const auto& last = waypoint_pos.back();
+            if ((current.head<2>() - last.head<2>()).norm() < 1e-4) {
+                // If position (x, y) is the same, skip it, mark last state as 2
+                waypoint_state.back() = 2;
+                continue;
+            }
+        }
+
+        // Compute yaw based on next point, unless it's the last point
+        double yaw = 0.0;
+        if (i + 1 < waypoint_input.size()) {
+            const auto& next = waypoint_input[i + 1];
+            yaw = std::atan2(next.y() - current.y(), next.x() - current.x());
+        } else if (i > 0) {
+            // For the last point, use previous point to compute yaw
+            const auto& prev = waypoint_input[i - 1];
+            yaw = std::atan2(current.y() - prev.y(), current.x() - prev.x());
+        }
+
+        waypoint_pos.emplace_back(current.x(), current.y(), yaw);
+        waypoint_state.emplace_back(3); // Valid waypoint
+    }
+}
+
+
 void Custom::setWaypoints(){
     std::vector<Eigen::Vector3d> waypoint_pos;
+    std::vector<int> waypoint_state;
+    
+    std::vector<Eigen::Vector3d> waypoint_input;
     
     // Example rectangular path with orientation
     // waypoint_pos.push_back(Eigen::Vector3d(2.0, 0.6, 0));
@@ -751,42 +815,47 @@ void Custom::setWaypoints(){
     // waypoint_pos.push_back(Eigen::Vector3d(1.2, 0.5, 0));
     // waypoint_pos.push_back(Eigen::Vector3d(3.0, 0.6, 0));
 
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 0.357, 0.0)); // t=0.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.750, 0.357, 0.0)); // t=2.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.357, 0.0)); // t=4.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.714, 0.0)); // t=6.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=8.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=10.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=12.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.500, 0.714, 0.0)); // t=14.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.714, 0.0)); // t=16.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.125, 0.357, 0.0)); // t=18.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.750, 0.357, 0.0)); // t=20.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 0.357, 0.0)); // t=22.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 0.714, 0.0)); // t=24.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.071, 0.0)); // t=26.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.429, 0.0)); // t=28.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=30.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=32.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=34.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.375, 1.786, 0.0)); // t=36.000
-    waypoint_pos.push_back(Eigen::Vector3d(1.750, 1.786, 0.0)); // t=38.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.125, 1.786, 0.0)); // t=40.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.500, 1.786, 0.0)); // t=42.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.500, 1.607, 0.0)); // t=44.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.500, 1.429, 0.0)); // t=46.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.875, 1.429, 0.0)); // t=48.000
-    waypoint_pos.push_back(Eigen::Vector3d(2.875, 1.429, 0.0)); // t=50.000
-    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=52.000
-    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=54.000
-    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=56.000
-    waypoint_pos.push_back(Eigen::Vector3d(3.250, 1.429, 0.0)); // t=58.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 0.357, 0.0)); // t=0.000
+    waypoint_input.push_back(Eigen::Vector3d(1.250, 0.357, 0.0)); // t=2.000
+    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.357, 0.0)); // t=4.000
+    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.714, 0.0)); // t=6.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=8.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=10.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=12.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=14.000
+    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.714, 0.0)); // t=16.000
+    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.357, 0.0)); // t=18.000
+    waypoint_input.push_back(Eigen::Vector3d(1.250, 0.357, 0.0)); // t=20.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 0.357, 0.0)); // t=22.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 0.714, 0.0)); // t=24.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 1.071, 0.0)); // t=26.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 1.429, 0.0)); // t=28.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 1.786, 0.0)); // t=30.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.086, 0.0)); // t=32.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.386, 0.0)); // t=34.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.586, 0.0)); // t=36.000
+    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.586, 0.0)); // t=36.000
+    waypoint_input.push_back(Eigen::Vector3d(1.250, 2.586, 0.0)); // t=38.000
+    waypoint_input.push_back(Eigen::Vector3d(1.625, 2.586, 0.0)); // t=40.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 2.586, 0.0)); // t=42.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 2.307, 0.0)); // t=44.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 2.107, 0.0)); // t=44.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 1.929, 0.0)); // t=44.000
+    waypoint_input.push_back(Eigen::Vector3d(2.000, 1.929, 0.0)); // t=46.000
+    waypoint_input.push_back(Eigen::Vector3d(2.375, 1.929, 0.0)); // t=48.000
+    waypoint_input.push_back(Eigen::Vector3d(2.375, 1.929, 0.0)); // t=50.000
+    waypoint_input.push_back(Eigen::Vector3d(2.750, 1.929, 0.0)); // t=52.000
+    waypoint_input.push_back(Eigen::Vector3d(3.00, 1.929, 0.0)); // t=54.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.750, 1.929, 0.0)); // t=56.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.750, 1.929, 0.0)); // t=58.000
+
+    processWaypoint(waypoint_input, waypoint_pos, waypoint_state);
 
     for(auto waypoint:waypoint_pos){
         path.addPoint(waypoint.x(), waypoint.y(), waypoint.z());
     }
 
-    controller.setPath(path);
+    controller.setPath(path, waypoint_state);
 }
 
 void Custom::wayppointInterpolation(){
@@ -967,84 +1036,84 @@ void Custom::updatePoseFromMocap() {
     }
 }
 
-void Custom::updateTargetPointFromPlanner() {
-    try {
-        // zmq::message_t message;
-        // auto result = zmq_planner_socket->recv(message, zmq::recv_flags::dontwait);
+// void Custom::updateTargetPointFromPlanner() {
+//     try {
+//         // zmq::message_t message;
+//         // auto result = zmq_planner_socket->recv(message, zmq::recv_flags::dontwait);
 
-        char buffer[4096] = {0};
-        // int recv_len = zmq_recv(zmq_planner_socket, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
-        int recv_len = zmq_recv(my_zmq_planner_sock, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
+//         char buffer[4096] = {0};
+//         // int recv_len = zmq_recv(zmq_planner_socket, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
+//         int recv_len = zmq_recv(my_zmq_planner_sock, buffer, sizeof(buffer) - 1, ZMQ_DONTWAIT);
         
         
         
-        if (recv_len > 0) {
-            // std::string msg_str = message.to_string();
+//         if (recv_len > 0) {
+//             // std::string msg_str = message.to_string();
 
-            buffer[recv_len] = '\0';
-            std::string msg_str(buffer);
+//             buffer[recv_len] = '\0';
+//             std::string msg_str(buffer);
             
-            if(DEBUG_MODE) {
-                std::cout << "Received Planner message: " << msg_str << std::endl;
-            }
+//             if(DEBUG_MODE) {
+//                 std::cout << "Received Planner message: " << msg_str << std::endl;
+//             }
 
-            json msg_json = json::parse(msg_str);
+//             json msg_json = json::parse(msg_str);
             
-            // Check if the message contains waypoints
-            if (msg_json.contains("waypoints") && msg_json["waypoints"].is_array()) {
-                // Clear existing path
-                path.clear();
+//             // Check if the message contains waypoints
+//             if (msg_json.contains("waypoints") && msg_json["waypoints"].is_array()) {
+//                 // Clear existing path
+//                 path.clear();
                 
-                // Access the waypoints array
-                auto& waypoints_array = msg_json["waypoints"];
+//                 // Access the waypoints array
+//                 auto& waypoints_array = msg_json["waypoints"];
                 
-                if(DEBUG_MODE) {
-                    std::cout << "Found " << waypoints_array.size() << " waypoints" << std::endl;
-                }
+//                 if(DEBUG_MODE) {
+//                     std::cout << "Found " << waypoints_array.size() << " waypoints" << std::endl;
+//                 }
                 
-                // Process each waypoint
-                for (size_t i = 1; i < waypoints_array.size()-2; i++) {
+//                 // Process each waypoint
+//                 for (size_t i = 1; i < waypoints_array.size()-2; i++) {
 
-                    // Each waypoint is an array [x, y]
-                    if (waypoints_array[i].is_array() && waypoints_array[i].size() >= 2) {
-                        double x = waypoints_array[i][0].get<double>();
-                        double y = waypoints_array[i][1].get<double>();
+//                     // Each waypoint is an array [x, y]
+//                     if (waypoints_array[i].is_array() && waypoints_array[i].size() >= 2) {
+//                         double x = waypoints_array[i][0].get<double>();
+//                         double y = waypoints_array[i][1].get<double>();
                         
-                        // Calculate yaw (heading) if not the last point
-                        double yaw = 0.0;
-                        if (i < waypoints_array.size() - 1 && waypoints_array[i+1].size() >= 2) {
-                            double next_x = waypoints_array[i+1][0].get<double>();
-                            double next_y = waypoints_array[i+1][1].get<double>();
-                            yaw = std::atan2(next_y - y, next_x - x);
-                            if(i == waypoints_array.size()-3)	yaw = 0.0;
-                        }
+//                         // Calculate yaw (heading) if not the last point
+//                         double yaw = 0.0;
+//                         if (i < waypoints_array.size() - 1 && waypoints_array[i+1].size() >= 2) {
+//                             double next_x = waypoints_array[i+1][0].get<double>();
+//                             double next_y = waypoints_array[i+1][1].get<double>();
+//                             yaw = std::atan2(next_y - y, next_x - x);
+//                             if(i == waypoints_array.size()-3)	yaw = 0.0;
+//                         }
                         
-                        // Add to the path
-                        path.addPoint(x, y, yaw);
+//                         // Add to the path
+//                         path.addPoint(x, y, yaw);
                         
-                        if(DEBUG_MODE) {
-                            std::cout << "  Waypoint " << i << ": (" << x << ", " << y 
-                                    << "), yaw: " << yaw << std::endl;
-                        }
-                    }
-                }
+//                         if(DEBUG_MODE) {
+//                             std::cout << "  Waypoint " << i << ": (" << x << ", " << y 
+//                                     << "), yaw: " << yaw << std::endl;
+//                         }
+//                     }
+//                 }
                 
-                // After processing all waypoints, set the path in the controller
-                controller.setPath(path);
+//                 // After processing all waypoints, set the path in the controller
+//                 controller.setPath(path);
                 
-                if(DEBUG_MODE) {
-                    std::cout << "Set " << path.size() << " waypoints in the controller" << std::endl;
-                }
-            } else {
-                if(DEBUG_MODE) {
-                    std::cout << "Message doesn't contain valid waypoints array" << std::endl;
-                }
-            }
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error processing planner data: " << e.what() << std::endl;
-    }
-}
+//                 if(DEBUG_MODE) {
+//                     std::cout << "Set " << path.size() << " waypoints in the controller" << std::endl;
+//                 }
+//             } else {
+//                 if(DEBUG_MODE) {
+//                     std::cout << "Message doesn't contain valid waypoints array" << std::endl;
+//                 }
+//             }
+//         }
+//     } catch (const std::exception& e) {
+//         std::cerr << "Error processing planner data: " << e.what() << std::endl;
+//     }
+// }
 
 void Custom::UDPRecv()
 {
