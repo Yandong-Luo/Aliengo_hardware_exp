@@ -21,6 +21,12 @@ T clamp(T val, T low, T high) {
     return std::max(low, std::min(val, high));
 }
 
+#define TURNING_STATE 1
+#define WAIT_STATE 2
+#define TRAJECTORY_FOLLOW_STATE 3
+
+
+static double start_stop_timestamp = 0.0;
 
 // ##########################################################################################
 // ####################################### PID Controller ###################################
@@ -346,7 +352,7 @@ public:
     // }
 
 	// Compute velocities based on current pose
-	void computeVelocities(const Pose& current_pose) {
+	void computeVelocities(const Pose& current_pose, double current_timestamp) {
 		// Store current pose for use in current_yaw() method
 		current_pose_ = current_pose;
 		
@@ -357,9 +363,66 @@ public:
 			cmd_angular_ = 0.0;
 			return;
 		}
+
+        if (current_state == WAIT_STATE) {
+            if ((current_timestamp - start_stop_timestamp) > 5){
+                start_stop_timestamp = 0.0;
+                current_state = TRAJECTORY_FOLLOW_STATE;
+            }
+            // If in turning state, just stop the robot
+            cmd_linear_x_ = 0.0;
+			cmd_linear_x_ = 0.0;
+			cmd_linear_y_ = 0.0;
+			cmd_angular_ = 0.0;
+			return;
+		}
 		
 		// Get current waypoint in world frame
 		const auto& target = path_[current_waypoint_idx_];
+
+        bool is_stop_point = false;
+        // if (current_waypoint_idx_ + 1 < len(path_) && target == path_[current_waypoint_idx_ + 1]) {
+        //     is_stop_point = true;
+        // }
+
+        if (current_waypoint_idx_ + 1 < path_.size()) {
+            const auto& next_target = path_[current_waypoint_idx_ + 1];
+            // target[2
+            double dx = next_target.x - target.x;
+            double dy = next_target.y - target.y;
+            target.yaw std::atan2(dy, dx);
+            is_stop_point = (std::abs(target.x - next_target.x) < 0.001 && 
+                            std::abs(target.y - next_target.y) < 0.001);
+        }
+
+        if (is_stop_point) {
+            // cmd_linear_x_ = 0.0;
+            // cmd_linear_y_ = 0.0;
+            // cmd_angular_ = 0.0;
+
+            current_state = WAIT_STATE;
+
+            start_stop_timestamp = current_timestamp;
+            
+            // Skip all identical waypoints
+            while (current_waypoint_idx_ + 1 < path_.size()) {
+                const auto& current = path_[current_waypoint_idx_];
+                const auto& next = path_[current_waypoint_idx_ + 1];
+                
+                if (std::abs(current.x - next.x) < 0.001 && 
+                    std::abs(current.y - next.y) < 0.001) {
+                    current_waypoint_idx_++;
+                } else {
+                    break;
+                }
+            }
+            
+            // if (DEBUG_MODE) {
+            //     std::cout << "Stop point detected. Stopping robot and skipping identical waypoints." << std::endl;
+            // }
+            return;
+        }
+
 		
 		// Create 3D point for target (z=0 for 2D navigation)
 		Eigen::Vector3d target_position(target.x, target.y, 0.0);
@@ -645,7 +708,11 @@ public:
     void* my_zmq_planner_ctx;
     void* my_zmq_planner_sock;
 
-    double last_timestamp = 0.0; 
+    int current_state = TRAJECTORY_FOLLOW_STATE;
+
+    double start_stop_timestamp = 0.0;
+
+    double current_timestamp = 0.0;
 
     Pose robot_pose;
 	std::vector<Pose> obstacles_pose;
@@ -675,14 +742,45 @@ void Custom::setWaypoints(){
     // waypoint_pos.push_back(Eigen::Vector3d(2.0, 1.6, -1.57));
     // waypoint_pos.push_back(Eigen::Vector3d(2.0, 0.6, 0));
 
-    waypoint_pos.push_back(Eigen::Vector3d(3.0, 0.6, 1.57));
-    waypoint_pos.push_back(Eigen::Vector3d(3.0, 2.7, 3.14));
-    waypoint_pos.push_back(Eigen::Vector3d(-0.8, 2.7, -2.9));
-    waypoint_pos.push_back(Eigen::Vector3d(-0.8, 1.0, 0));
-    waypoint_pos.push_back(Eigen::Vector3d(0.7, 1.0, 0));
-    waypoint_pos.push_back(Eigen::Vector3d(0.7, 0.5, 0));
-    waypoint_pos.push_back(Eigen::Vector3d(1.2, 0.5, 0));
-    waypoint_pos.push_back(Eigen::Vector3d(3.0, 0.6, 0));
+    // waypoint_pos.push_back(Eigen::Vector3d(3.0, 0.6, 1.57));
+    // waypoint_pos.push_back(Eigen::Vector3d(3.0, 2.7, 3.14));
+    // waypoint_pos.push_back(Eigen::Vector3d(-0.8, 2.7, -2.9));
+    // waypoint_pos.push_back(Eigen::Vector3d(-0.8, 1.0, 0));
+    // waypoint_pos.push_back(Eigen::Vector3d(0.7, 1.0, 0));
+    // waypoint_pos.push_back(Eigen::Vector3d(0.7, 0.5, 0));
+    // waypoint_pos.push_back(Eigen::Vector3d(1.2, 0.5, 0));
+    // waypoint_pos.push_back(Eigen::Vector3d(3.0, 0.6, 0));
+
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 0.357, 0.0)); // t=0.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.750, 0.357, 0.0)); // t=2.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.357, 0.0)); // t=4.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.714, 0.0)); // t=6.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=8.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=10.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=12.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.500, 0.714, 0.0)); // t=14.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.714, 0.0)); // t=16.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.125, 0.357, 0.0)); // t=18.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.750, 0.357, 0.0)); // t=20.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 0.357, 0.0)); // t=22.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 0.714, 0.0)); // t=24.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.071, 0.0)); // t=26.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.429, 0.0)); // t=28.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=30.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=32.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=34.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.375, 1.786, 0.0)); // t=36.000
+    waypoint_pos.push_back(Eigen::Vector3d(0.750, 1.786, 0.0)); // t=38.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.125, 1.786, 0.0)); // t=40.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.500, 1.786, 0.0)); // t=42.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.500, 1.607, 0.0)); // t=44.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.500, 1.429, 0.0)); // t=46.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.875, 1.429, 0.0)); // t=48.000
+    waypoint_pos.push_back(Eigen::Vector3d(1.875, 1.429, 0.0)); // t=50.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=52.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=54.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=56.000
+    waypoint_pos.push_back(Eigen::Vector3d(2.250, 1.429, 0.0)); // t=58.000
 
     for(auto waypoint:waypoint_pos){
         path.addPoint(waypoint.x(), waypoint.y(), waypoint.z());
@@ -849,7 +947,7 @@ void Custom::updatePoseFromMocap() {
                 
                 // Record timestamp
                 if (msg_json.contains("timestamp")) {
-                    last_timestamp = msg_json["timestamp"].get<double>();
+                    current_timestamp = msg_json["timestamp"].get<double>();
                 }
             }
             
@@ -967,7 +1065,7 @@ void Custom::RobotFollower(){
     updatePoseFromMocap();
     // updateTargetPointFromPlanner();
     // Use PID controller to compute control commands
-    controller.computeVelocities(robot_pose);
+    controller.computeVelocities(robot_pose, current_timestamp);
     
     // If the goal hasn't been reached, send control commands
     if (!controller.isGoalReached()) {
