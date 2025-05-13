@@ -370,7 +370,7 @@ public:
         if (current_state == WAIT_STATE) {
             std::cout<< "Waiting for 50ms..." << std::endl;
             std::cout<< "current_timestamp: " << current_timestamp << "start stop:"<< start_stop_timestamp << std::endl;
-            if (abs(current_timestamp - start_stop_timestamp) > 5){
+            if (abs(current_timestamp - start_stop_timestamp) > 3){
                 start_stop_timestamp = 0.0;
                 current_state = TRAJECTORY_FOLLOW_STATE;
             }
