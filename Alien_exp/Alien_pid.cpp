@@ -646,7 +646,7 @@ public:
             my_zmq_sock = zmq_socket(my_zmq_ctx, ZMQ_SUB);
             
             // Connect to MoCap server
-            zmq_connect(my_zmq_sock, "tcp://128.61.44.239:5555");
+            zmq_connect(my_zmq_sock, "tcp://192.168.1.9:5555");
             // Set subscription filter to receive everything
             zmq_setsockopt(my_zmq_sock, ZMQ_SUBSCRIBE, "", 0);
             std::cout << "Connected to MoCap server" << std::endl;
