@@ -26,9 +26,9 @@ T clamp(T val, T low, T high) {
 #define TRAJECTORY_FOLLOW_STATE 3
 
 
-static double start_stop_timestamp = 0.0;
+// static double start_stop_timestamp = 0.0;
 
-static int current_state = TRAJECTORY_FOLLOW_STATE;
+// static int current_state = TRAJECTORY_FOLLOW_STATE;
 
 // ##########################################################################################
 // ####################################### PID Controller ###################################
@@ -355,7 +355,7 @@ public:
     // }
 
 	// Compute velocities based on current pose
-	void computeVelocities(const Pose& current_pose, double current_timestamp) {
+	void computeVelocities(const Pose& current_pose, int current_state) {
 		// Store current pose for use in current_yaw() method
 		current_pose_ = current_pose;
 		
@@ -367,19 +367,19 @@ public:
 			return;
 		}
 
-        if (current_state == WAIT_STATE) {
-            std::cout<< "Waiting for 50ms..." << std::endl;
-            std::cout<< "current_timestamp: " << current_timestamp << "start stop:"<< start_stop_timestamp << std::endl;
-            if (abs(current_timestamp - start_stop_timestamp) > 3){
-                start_stop_timestamp = 0.0;
-                current_state = TRAJECTORY_FOLLOW_STATE;
-            }
-            cmd_linear_x_ = 0.0;
-			cmd_linear_x_ = 0.0;
-			cmd_linear_y_ = 0.0;
-			cmd_angular_ = 0.0;
-			return;
-		}
+        // if (current_state == WAIT_STATE) {
+        //     std::cout<< "Waiting for 50ms..." << std::endl;
+        //     std::cout<< "current_timestamp: " << current_timestamp << "start stop:"<< start_stop_timestamp << std::endl;
+        //     if (abs(current_timestamp - start_stop_timestamp) > 3){
+        //         start_stop_timestamp = 0.0;
+        //         current_state = TRAJECTORY_FOLLOW_STATE;
+        //     }
+        //     // cmd_linear_x_ = 0.0;
+		// 	cmd_linear_x_ = 0.0;
+		// 	cmd_linear_y_ = 0.0;
+		// 	cmd_angular_ = 0.0;
+		// 	return;
+		// }
 		
 		// Get current waypoint in world frame
 		const auto& target = path_[current_waypoint_idx_];
@@ -479,7 +479,8 @@ public:
                 cmd_linear_y_ = 0.0;
                 cmd_angular_ = 0.0;
                 current_state = WAIT_STATE;
-                start_stop_timestamp = current_timestamp;
+                // start_stop_timestamp = current_timestamp;
+                std::cout<<"need to stop"<<std::endl;
             }
 			
 			// Get new target waypoint
@@ -536,7 +537,7 @@ public:
 			std::cout << "Target world: (" << target.x << ", " << target.y << "), yaw: " << target.yaw << std::endl;
 			std::cout << "Target robot: (" << dx_robot << ", " << dy_robot << ")" << std::endl;
 			std::cout << "Current: (" << current_pose.position.x() << ", " 
-					<< current_pose.position.y() << "), yaw: " << current_yaw() << "timestamp: " << current_timestamp << std::endl;
+					<< current_pose.position.y() << "), yaw: " << current_yaw() << "timestamp: "  << std::endl;
 			std::cout << "Distance: " << distance << ", Yaw error: " << yaw_error << " rad" << std::endl;
 			std::cout << "Position tolerance: " << pos_tol_ << ", Angle tolerance: " << ang_tol_ << std::endl;
 			std::cout << "Cmd: x=" << cmd_linear_x_ << ", y=" << cmd_linear_y_ << ", angular=" << cmd_angular_ << std::endl;
@@ -646,7 +647,7 @@ public:
             my_zmq_sock = zmq_socket(my_zmq_ctx, ZMQ_SUB);
             
             // Connect to MoCap server
-            zmq_connect(my_zmq_sock, "tcp://192.168.1.9:5555");
+            zmq_connect(my_zmq_sock, "tcp://143.215.105.70:5555");
             // Set subscription filter to receive everything
             zmq_setsockopt(my_zmq_sock, ZMQ_SUBSCRIBE, "", 0);
             std::cout << "Connected to MoCap server" << std::endl;
@@ -731,9 +732,9 @@ public:
     void* my_zmq_planner_ctx;
     void* my_zmq_planner_sock;
 
-    // int current_state = TRAJECTORY_FOLLOW_STATE;
+    int current_state = TRAJECTORY_FOLLOW_STATE;
 
-    double start_stop_timestamp = 0.0;
+    int start_stop_timestamp = 0.0;
 
     double current_timestamp = 0.0;
 
@@ -755,6 +756,9 @@ void Custom::setTargetPoint(double x, double y, double yaw) {
     }
 }
 
+// waypoint_input: is the waypoint from planner, including the duplicate points and lack of yaw
+// waypoint_pos: is the processed waypoint, including yaw and removing duplicates
+// waypoint_state: is the state of the waypoint, 2: WAIT_STATE, 0: TRAJECTORY_FOLLOW_STATE
 void Custom::processWaypoint(const std::vector<Eigen::Vector3d>& waypoint_input,
                              std::vector<Eigen::Vector3d>& waypoint_pos,
                              std::vector<int>& waypoint_state) {
@@ -815,43 +819,175 @@ void Custom::setWaypoints(){
     // waypoint_pos.push_back(Eigen::Vector3d(1.2, 0.5, 0));
     // waypoint_pos.push_back(Eigen::Vector3d(3.0, 0.6, 0));
 
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 0.357, 0.0)); // t=0.000
-    waypoint_input.push_back(Eigen::Vector3d(1.250, 0.357, 0.0)); // t=2.000
-    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.357, 0.0)); // t=4.000
-    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.714, 0.0)); // t=6.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=8.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=10.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=12.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 0.714, 0.0)); // t=14.000
-    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.714, 0.0)); // t=16.000
-    waypoint_input.push_back(Eigen::Vector3d(1.625, 0.357, 0.0)); // t=18.000
-    waypoint_input.push_back(Eigen::Vector3d(1.250, 0.357, 0.0)); // t=20.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 0.357, 0.0)); // t=22.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 0.714, 0.0)); // t=24.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 1.071, 0.0)); // t=26.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 1.429, 0.0)); // t=28.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 1.786, 0.0)); // t=30.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.086, 0.0)); // t=32.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.386, 0.0)); // t=34.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.586, 0.0)); // t=36.000
-    waypoint_input.push_back(Eigen::Vector3d(0.875, 2.586, 0.0)); // t=36.000
-    waypoint_input.push_back(Eigen::Vector3d(1.250, 2.586, 0.0)); // t=38.000
-    waypoint_input.push_back(Eigen::Vector3d(1.625, 2.586, 0.0)); // t=40.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 2.586, 0.0)); // t=42.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 2.307, 0.0)); // t=44.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 2.107, 0.0)); // t=44.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 1.929, 0.0)); // t=44.000
-    waypoint_input.push_back(Eigen::Vector3d(2.000, 1.929, 0.0)); // t=46.000
-    waypoint_input.push_back(Eigen::Vector3d(2.375, 1.929, 0.0)); // t=48.000
-    waypoint_input.push_back(Eigen::Vector3d(2.375, 1.929, 0.0)); // t=50.000
-    waypoint_input.push_back(Eigen::Vector3d(2.750, 1.929, 0.0)); // t=52.000
-    waypoint_input.push_back(Eigen::Vector3d(3.00, 1.929, 0.0)); // t=54.000
-    // waypoint_input.push_back(Eigen::Vector3d(2.750, 1.929, 0.0)); // t=56.000
-    // waypoint_input.push_back(Eigen::Vector3d(2.750, 1.929, 0.0)); // t=58.000
+    // // robot 2 in planner
+    // waypoint_pos.push_back(Eigen::Vector3d(1.000, 0.529, 0.0)); // t=0.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(1.400, 0.529, 0.0)); // t=2.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 0.529, 1.57)); // t=4.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 1.057, 0.0)); // t=6.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=8.000
+    // waypoint_state.push_back(WAIT_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 1.057, -1.57)); // t=16.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 0.529, -3.14)); // t=18.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(1.400, 0.529, -3.14)); // t=20.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(0.700, 0.529, 1.57)); // t=22.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(0.700, 1.057, 1.57)); // t=24.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(0.700, 1.586, 1.57)); // t=26.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(0.700, 2.114, 1.57)); // t=28.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=36.000
+    // waypoint_state.push_back(WAIT_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(1.400, 2.643, 0.0)); // t=38.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 2.643, 0.0)); // t=40.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.643, -1.57)); // t=42.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.379, -1.57)); // t=44.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.114, 0.0)); // t=46.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(3.500, 2.114, 0.0)); // t=48.000
+    // waypoint_state.push_back(WAIT_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(3.8500, 2.114, 0.0)); // t=48.000
+    // waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    // waypoint_pos.push_back(Eigen::Vector3d(4.200, 2.114, 0.0)); // t=52.000
+    // waypoint_state.push_back(WAIT_STATE);
+
+    // robot 1 in planner
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=0.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.114, 0.0)); // t=2.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 1.586, 0.0)); // t=4.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 1.057, 0.0)); // t=6.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=8.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=10.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=12.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=14.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 1.057, 0.0)); // t=16.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 1.586, 0.0)); // t=18.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.114, 0.0)); // t=20.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=22.000
+    // waypoint_input.push_back(Eigen::Vector3d(1.400, 2.643, 0.0)); // t=24.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.100, 2.643, 0.0)); // t=26.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.643, 0.0)); // t=28.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.379, 0.0)); // t=30.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.114, 0.0)); // t=32.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 2.114, 0.0)); // t=34.000
+    // waypoint_input.push_back(Eigen::Vector3d(4.200, 2.114, 0.0)); // t=36.000
+    // waypoint_input.push_back(Eigen::Vector3d(4.200, 2.114, 0.0)); // t=38.000
+    // waypoint_input.push_back(Eigen::Vector3d(4.200, 2.114, 0.0)); // t=40.000
+    // waypoint_input.push_back(Eigen::Vector3d(4.200, 2.114, 0.0)); // t=42.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 2.114, 0.0)); // t=44.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 1.586, 0.0)); // t=46.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 1.057, 0.0)); // t=48.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=50.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=52.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 1.057, 0.0)); // t=54.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 1.586, 0.0)); // t=56.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 2.114, 0.0)); // t=58.000
+
+    // robot 3 in planner
+    // waypoint_input.push_back(Eigen::Vector3d(4.200, 2.114, 0.0)); // t=0.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 2.114, 0.0)); // t=2.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.114, 0.0)); // t=4.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.379, 0.0)); // t=6.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.643, 0.0)); // t=8.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.100, 2.643, 0.0)); // t=10.000
+    // waypoint_input.push_back(Eigen::Vector3d(1.400, 2.643, 0.0)); // t=12.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=14.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=16.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=18.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=20.000
+    // waypoint_input.push_back(Eigen::Vector3d(1.400, 2.643, 0.0)); // t=22.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.100, 2.643, 0.0)); // t=24.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.643, 0.0)); // t=26.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.379, 0.0)); // t=28.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 2.114, 0.0)); // t=30.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 2.114, 0.0)); // t=32.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 1.586, 0.0)); // t=34.000
+    // waypoint_input.push_back(Eigen::Vector3d(3.500, 1.057, 0.0)); // t=36.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=38.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=40.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=42.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=44.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.100, 1.057, 0.0)); // t=46.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.100, 0.529, 0.0)); // t=48.000
+    // waypoint_input.push_back(Eigen::Vector3d(1.400, 0.529, 0.0)); // t=50.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=52.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=54.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=56.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=58.000
+
+
+    waypoint_input.push_back(Eigen::Vector3d(4.200, 2.114, 3.14)); // t=0.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(3.500, 2.114, 3.14)); // t=2.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.800, 2.114, 1.57)); // t=4.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.800, 2.379, 1.57)); // t=6.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.800, 2.643, 1.57)); // t=8.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.100, 2.643, 3.14)); // t=10.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(1.400, 2.643, 3.14)); // t=12.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=14.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=16.000
+    waypoint_state.push_back(WAIT_STATE);
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=18.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 2.643, 0.0)); // t=20.000
+    waypoint_input.push_back(Eigen::Vector3d(1.400, 2.643, 0.0)); // t=22.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.100, 2.643, 0.0)); // t=24.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.800, 2.643, -1.57)); // t=26.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.800, 2.379, -1.57)); // t=28.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.800, 2.114, 0.0)); // t=30.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(3.500, 2.114, -1.57)); // t=32.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(3.500, 1.586, -1.57)); // t=34.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(3.500, 1.057, 3.14)); // t=36.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=38.000
+    waypoint_state.push_back(WAIT_STATE);
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=40.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=42.000
+    // waypoint_input.push_back(Eigen::Vector3d(2.800, 1.057, 0.0)); // t=44.000
+    waypoint_input.push_back(Eigen::Vector3d(2.100, 1.057, -1.57)); // t=46.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(2.100, 0.529, 3.14)); // t=48.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(1.400, 0.529, 3.14)); // t=50.000
+    waypoint_state.push_back(TRAJECTORY_FOLLOW_STATE);
+    waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 3.14)); // t=52.000
+    waypoint_state.push_back(WAIT_STATE);
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=54.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=56.000
+    // waypoint_input.push_back(Eigen::Vector3d(0.700, 0.529, 0.0)); // t=58.000
+
+
+
+
 
     processWaypoint(waypoint_input, waypoint_pos, waypoint_state);
 
     for(auto waypoint:waypoint_pos){
+        std::cout<<"waypoint: x:"<<waypoint.x() <<" y:"<< waypoint.y()<<" yaw:"<<waypoint.z()<<std::endl;
         path.addPoint(waypoint.x(), waypoint.y(), waypoint.z());
     }
 
@@ -880,7 +1016,7 @@ void Custom::wayppointInterpolation(){
     // For longer distances, create interpolated waypoints
     // Calculate number of points based on distance
     const double POINT_SPACING = 0.5; // meters between points
-    std::cout<<static_cast<int>(distance / POINT_SPACING)<<std::endl;
+    // std::cout<<static_cast<int>(distance / POINT_SPACING)<<std::endl;
     int num_points = std::min(30, static_cast<int>(distance / POINT_SPACING));
     
     // Direction vector
@@ -1134,7 +1270,7 @@ void Custom::RobotFollower(){
     updatePoseFromMocap();
     // updateTargetPointFromPlanner();
     // Use PID controller to compute control commands
-    controller.computeVelocities(robot_pose, current_timestamp);
+    controller.computeVelocities(robot_pose, current_state);
     
     // If the goal hasn't been reached, send control commands
     if (!controller.isGoalReached()) {
@@ -1147,7 +1283,13 @@ void Custom::RobotFollower(){
 
         double vx = controller.getLinearVelocityX();
         double vy = controller.getLinearVelocityY();
-        
+
+        if(current_state == WAIT_STATE){
+            cmd.mode = 1;
+            udp.SetSend(cmd);
+            std::cout<<"stand and wait"<<std::endl;
+            return;
+        }        
         // Send control commands to the robot
         // sport_client.Move(vx, vy, angular_vel);
 
@@ -1163,7 +1305,7 @@ void Custom::RobotFollower(){
 
         if(angular_vel > 0.3)	angular_vel = 0.3;
         if(angular_vel < -0.3)	angular_vel = -0.3;
-        std::cout<<"vx: "<<vx<<"vy: "<<vy<<"angular vel:"<<angular_vel<<std::endl;
+        // std::cout<<"vx: "<<vx<<"vy: "<<vy<<"angular vel:"<<angular_vel<<std::endl;
 
         cmd.forwardSpeed = vx;
         cmd.sideSpeed = vy;  // No lateral movement
@@ -1178,7 +1320,7 @@ void Custom::RobotFollower(){
     } else {
         // Goal reached, stop moving
         // sport_client.StopMove();
-        cmd.mode = 0;
+        cmd.mode = 1;
         // cmd.gaitType = 0;
         cmd.forwardSpeed = 0.0f;
         cmd.sideSpeed = 0.0f;
@@ -1276,7 +1418,7 @@ int main(void)
     Custom custom(HIGHLEVEL);
     // InitEnvironment();
     // LoopFunc loop_control("control_loop", custom.dt,    boost::bind(&Custom::RobotControl, &custom));
-    LoopFunc loop_control("control_loop", custom.dt,    boost::bind(&Custom::RobotFollower, &custom));
+    LoopFunc loop_control("control_loop", 0.001,    boost::bind(&Custom::RobotFollower, &custom));
     LoopFunc loop_udpSend("udp_send",     custom.dt, 3, boost::bind(&Custom::UDPSend,      &custom));
     LoopFunc loop_udpRecv("udp_recv",     custom.dt, 3, boost::bind(&Custom::UDPRecv,      &custom));
 
