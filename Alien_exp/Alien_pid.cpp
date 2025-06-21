@@ -806,7 +806,7 @@ public:
             my_zmq_sock = zmq_socket(my_zmq_ctx, ZMQ_SUB);
             
             // Connect to MoCap server
-            zmq_connect(my_zmq_sock, "tcp://143.215.96.245:5555");
+            zmq_connect(my_zmq_sock, "tcp://143.215.104.42:5555");
             // Set subscription filter to receive everything
             zmq_setsockopt(my_zmq_sock, ZMQ_SUBSCRIBE, "", 0);
             std::cout << "Connected to MoCap server" << std::endl;
@@ -1108,35 +1108,48 @@ void Custom::setWaypoints(){
     // waypoint_pos.push_back(Eigen::Vector3d(4.800, 2.379,  0.000));  wait_time.push_back(6.0);
 
     // robot 3 in planner
-    waypoint_pos.push_back(Eigen::Vector3d(4.200, 2.114,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(3.500, 2.114,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.114,  1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.379,  1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.643,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.100, 2.643,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(1.400, 2.643,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(0.700, 2.843,  0.000));  wait_time.push_back(6.0);
-    waypoint_pos.push_back(Eigen::Vector3d(1.400, 2.643,  0.000));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.100, 2.643,  0.000));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.643, -1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.379, -1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.114,  0.000));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(3.500, 2.114, -1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(3.500, 1.586, -1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(3.500, 1.057,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.800, 1.057,  3.142));  wait_time.push_back(6.0);
-    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 1.057, -1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.400, 0.857, -1.571));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(2.100, 0.529,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(1.400, 0.529,  3.142));  wait_time.push_back(0.0);
-    waypoint_pos.push_back(Eigen::Vector3d(0.700, 0.529,  3.142));  wait_time.push_back(6.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(4.200, 2.114,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(3.500, 2.114,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.114,  1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.379,  1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.643,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 2.643,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(1.400, 2.643,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(0.700, 2.843,  0.000));  wait_time.push_back(6.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(1.400, 2.643,  0.000));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 2.643,  0.000));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.643, -1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.379, -1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 2.114,  0.000));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(3.500, 2.114, -1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(3.500, 1.586, -1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(3.500, 1.057,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.800, 1.057,  3.142));  wait_time.push_back(6.0);
+    // // waypoint_pos.push_back(Eigen::Vector3d(2.800, 1.057, -1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.400, 0.857, -1.571));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(2.100, 0.529,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(1.400, 0.529,  3.142));  wait_time.push_back(0.0);
+    // waypoint_pos.push_back(Eigen::Vector3d(0.700, 0.529,  3.142));  wait_time.push_back(6.0);
 
-    // processWaypoint(waypoint_input, waypoint_pos, waypoint_state);
+    // robot 3 in planner
+    waypoint_pos.push_back(Eigen::Vector3d(5.6, 1.2,  1.571)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(5.6, 2.0,  1.571)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(5.6, 2.8,  3.142)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(4.7, 2.8,  3.142)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(3.9, 2.8,  3.142)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(3.0, 2.8,  3.142)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(2.1, 2.8,  3.142)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(1.3, 2.8,  3.142)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(0.4, 2.8, -1.571)); wait_time.push_back(3.0);
+    waypoint_pos.push_back(Eigen::Vector3d(0.4, 2.0, -1.571)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(0.4, 1.2, -1.571)); wait_time.push_back(3.0);
+    waypoint_pos.push_back(Eigen::Vector3d(0.7, 0.7,  0.000)); wait_time.push_back(3.0);
+    waypoint_pos.push_back(Eigen::Vector3d(1.3, 0.4,  0.000)); wait_time.push_back(2.0);
+    waypoint_pos.push_back(Eigen::Vector3d(2.1, 0.4,  1.571)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(2.1, 1.2,  0.000)); wait_time.push_back(0.0);
+    waypoint_pos.push_back(Eigen::Vector3d(3.0, 1.2,  0.000)); wait_time.push_back(3.0);
 
-    // for(auto waypoint:waypoint_pos){
-    //     std::cout<<"waypoint: x:"<<waypoint.x() <<" y:"<< waypoint.y()<<" yaw:"<<waypoint.z()<<std::endl;
-    //     path.addPoint(waypoint.x(), waypoint.y(), waypoint.z());
-    // }
+
 
     for(int i = 0; i < waypoint_pos.size(); ++i){
 			path.addPoint(waypoint_pos[i].x(), waypoint_pos[i].y(), waypoint_pos[i].z(), wait_time[i]);
@@ -1241,8 +1254,8 @@ void Custom::updatePoseFromMocap() {
                 auto& robots = msg_json["robots"];
                 
                 // Process robot pose
-                if (robots.contains("Go1")) {
-                    auto& robot = robots["Go1"];
+                if (robots.contains("Go3")) {
+                    auto& robot = robots["Go3"];
                     
                     if (robot.contains("position") && robot.contains("rotation")) {
                         auto& pos = robot["position"];
@@ -1272,7 +1285,7 @@ void Custom::updatePoseFromMocap() {
                     std::string name = it.key();
                     auto& data = it.value();
                     // Skip our robot
-                    if (name == "Go1" or name == "Go2") continue;
+                    if (name == "Go1" or name == "Go2" or name == "Go3") continue;
                     
                     // Process any object with "obstacle" in the name
                     if (name.find("obstacle") != std::string::npos) {
